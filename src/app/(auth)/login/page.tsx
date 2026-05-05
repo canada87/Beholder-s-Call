@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -14,10 +14,10 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError("")
-    const result = await signIn("credentials", { email, password, redirect: false })
+    const result = await signIn("credentials", { username, password, redirect: false })
     setLoading(false)
     if (result?.error) {
-      setError("Email o password errati")
+      setError("Username o password errati")
     } else {
       router.push("/")
     }
@@ -34,14 +34,14 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="bg-gray-800 rounded-2xl p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Username</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               className="w-full bg-gray-700 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
-              placeholder="nome@esempio.com"
+              placeholder="il tuo username"
             />
           </div>
           <div>
