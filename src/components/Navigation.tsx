@@ -40,7 +40,7 @@ export default function Navigation({ isMaster }: { isMaster: boolean }) {
           )
         })}
         <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
           className="flex flex-col items-center py-3 px-4 flex-1 text-gray-400 transition-colors hover:text-red-400"
         >
           <span className="text-xl">🚪</span>
