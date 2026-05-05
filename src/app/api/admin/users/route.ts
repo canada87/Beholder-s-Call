@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
+import { Session } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import bcrypt from "bcryptjs"
 
-function adminOnly(session: Awaited<ReturnType<typeof getServerSession>>) {
+function adminOnly(session: Session | null) {
   return !session || session.user.role !== "ADMIN"
 }
 
