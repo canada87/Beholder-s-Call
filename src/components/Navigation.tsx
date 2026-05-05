@@ -1,6 +1,6 @@
 "use client"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
 
 const NAV = [
@@ -12,8 +12,14 @@ const NAV = [
 
 export default function Navigation({ isMaster }: { isMaster: boolean }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { data: session } = useSession()
   const isAdmin = session?.user?.role === "ADMIN"
+
+  const handleSignOut = async () => {
+    await signOut({ redirect: false })
+    router.push("/login")
+  }
 
   const visible = NAV.filter((item) => {
     if (item.adminOnly) return isAdmin
@@ -40,7 +46,7 @@ export default function Navigation({ isMaster }: { isMaster: boolean }) {
           )
         })}
         <button
-          onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
+          onClick={handleSignOut}
           className="flex flex-col items-center py-3 px-4 flex-1 text-gray-400 transition-colors hover:text-red-400"
         >
           <span className="text-xl">🚪</span>
