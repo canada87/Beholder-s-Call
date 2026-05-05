@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 
 const NAV = [
   { href: "/", label: "Calendario", icon: "📅" },
@@ -39,6 +39,13 @@ export default function Navigation({ isMaster }: { isMaster: boolean }) {
             </Link>
           )
         })}
+        <button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="flex flex-col items-center py-3 px-4 flex-1 text-gray-400 transition-colors hover:text-red-400"
+        >
+          <span className="text-xl">🚪</span>
+          <span className="text-xs mt-0.5">Esci</span>
+        </button>
       </div>
     </nav>
   )

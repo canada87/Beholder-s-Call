@@ -324,13 +324,12 @@ function CampaignForm({
     setError("")
 
     if (campaign) {
-      // Update basic info
-      await fetch(`/api/campaigns/${campaign.id}`, {
+      const r = await fetch(`/api/campaigns/${campaign.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, masterId, defaultDayOfWeek, color }),
       })
-      // Sync players: remove all then add selected
+      if (!r.ok) { setLoading(false); setError("Errore aggiornamento campagna"); return }
       const current = campaign.players.map((p) => p.id)
       for (const uid of current) {
         await fetch(`/api/campaigns/${campaign.id}/players?userId=${uid}`, { method: "DELETE" })
@@ -343,11 +342,17 @@ function CampaignForm({
         })
       }
     } else {
-      await fetch("/api/campaigns", {
+      const r = await fetch("/api/campaigns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, masterId, defaultDayOfWeek, color, playerIds }),
       })
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}))
+        setLoading(false)
+        setError(d.error ?? "Errore creazione campagna")
+        return
+      }
     }
 
     setLoading(false)
