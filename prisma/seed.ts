@@ -40,7 +40,7 @@ async function main() {
   })
 
   const players = await Promise.all(
-    ["Aragorn", "Legolas", "Gimli", "Frodo"].map((username, i) =>
+    ["Aragorn", "Legolas", "Gimli", "Frodo"].map(async (username, i) =>
       prisma.user.upsert({
         where: { email: `player${i + 1}@beholders.call` },
         update: {},
