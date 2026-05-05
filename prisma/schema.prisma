@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  role         Role     @default(PLAYER)
+  createdAt    DateTime @default(now())
+
+  masterOf       Campaign[]     @relation("CampaignMaster")
+  playerIn       CampaignPlayer[]
+  availabilities Availability[]
+}
+
+enum Role {
+  ADMIN
+  PLAYER
+}
+
+model Campaign {
+  id               String   @id @default(cuid())
+  name             String
+  masterId         String
+  master           User     @relation("CampaignMaster", fields: [masterId], references: [id])
+  defaultDayOfWeek Int      // 0=Mon … 6=Sun
+  color            String   @default("#8b5cf6")
+  createdAt        DateTime @default(now())
+
+  players        CampaignPlayer[]
+  sessions       Session[]
+  availabilities Availability[]
+}
+
+model CampaignPlayer {
+  campaignId String
+  userId     String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, userId])
+}
+
+// Only rows that differ from the default exist here (overrides + cancellations)
+model Session {
+  id          String   @id @default(cuid())
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  weekStart   DateTime // Monday 00:00:00 UTC of that week
+  date        DateTime // Actual session date (may equal default or be an override)
+  isCancelled Boolean  @default(false)
+
+  @@unique([campaignId, weekStart])
+}
+
+model Availability {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  weekStart  DateTime // Monday 00:00:00 UTC
+  dayOfWeek  Int      // 0=Mon … 6=Sun
+  vote       Vote
+
+  @@unique([userId, campaignId, weekStart, dayOfWeek])
+}
+
+enum Vote {
+  AVAILABLE
+  PREFERRED
+  UNAVAILABLE
+}

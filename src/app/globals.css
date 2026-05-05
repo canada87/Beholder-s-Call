@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #111827;
+  color: #f3f4f6;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Safe area for mobile notch / home indicator */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 1rem);
+}
