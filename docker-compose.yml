@@ -19,6 +19,8 @@ services:
       - DATABASE_URL=postgresql://beholders:${DB_PASSWORD}@db:5432/beholders_call
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     depends_on:
       db:
         condition: service_healthy
