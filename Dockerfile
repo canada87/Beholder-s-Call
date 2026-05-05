@@ -1,6 +1,9 @@
 FROM node:20-alpine
 WORKDIR /app
 
+# openssl required by Prisma engine binaries (especially on Alpine/musl ARM64)
+RUN apk add --no-cache openssl
+
 # Install dependencies first (layer cache)
 COPY package*.json ./
 COPY prisma ./prisma/
