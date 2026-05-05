@@ -4,7 +4,7 @@ WORKDIR /app
 # Install dependencies first (layer cache)
 COPY package*.json ./
 COPY prisma ./prisma/
-RUN npm ci
+RUN npm install
 RUN npx prisma generate
 
 # Copy source and build
