@@ -1,7 +1,9 @@
 "use client"
 import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
-import { DAYS_FULL, CAMPAIGN_COLORS } from "@/lib/utils"
+import { addDays } from "date-fns"
+import { DAYS_FULL, CAMPAIGN_COLORS, getNext4Weeks, weekStartToString, formatDayLabel } from "@/lib/utils"
+import WeekSelector from "@/components/WeekSelector"
 
 interface User {
   id: string
@@ -19,7 +21,8 @@ interface Campaign {
   players: { id: string; username: string }[]
 }
 
-type Tab = "users" | "campaigns"
+type VoteValue = "AVAILABLE" | "PREFERRED" | "UNAVAILABLE" | null
+type Tab = "users" | "campaigns" | "availability"
 
 export default function AdminPage() {
   const { data: session } = useSession()
@@ -43,7 +46,7 @@ export default function AdminPage() {
       <h1 className="text-2xl font-bold">Amministrazione</h1>
 
       <div className="flex rounded-xl overflow-hidden border border-gray-700">
-        {(["users", "campaigns"] as Tab[]).map((t) => (
+        {(["users", "campaigns", "availability"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -51,7 +54,7 @@ export default function AdminPage() {
               tab === t ? "bg-violet-700 text-white" : "bg-gray-800 text-gray-400"
             }`}
           >
-            {t === "users" ? "Utenti" : "Campagne"}
+            {t === "users" ? "Utenti" : t === "campaigns" ? "Campagne" : "Disponibilità"}
           </button>
         ))}
       </div>
@@ -61,6 +64,9 @@ export default function AdminPage() {
       )}
       {tab === "campaigns" && (
         <CampaignsTab campaigns={campaigns} users={users} onRefresh={fetchCampaigns} />
+      )}
+      {tab === "availability" && (
+        <AvailabilityTab users={users} campaigns={campaigns} />
       )}
     </div>
   )
@@ -436,6 +442,171 @@ function CampaignForm({
         </div>
       </form>
     </div>
+  )
+}
+
+// ---- Availability Tab ----
+
+function AvailabilityTab({ users, campaigns }: { users: User[]; campaigns: Campaign[] }) {
+  const [selectedUserId, setSelectedUserId] = useState("")
+  const [selectedCampaignId, setSelectedCampaignId] = useState("")
+  const [weeks] = useState(getNext4Weeks)
+  const [selectedWeek, setSelectedWeek] = useState(weeks[0])
+  const [votes, setVotes] = useState<Record<number, VoteValue>>({})
+  const [saving, setSaving] = useState<number | null>(null)
+
+  const userCampaigns = campaigns.filter(
+    (c) => c.players.some((p) => p.id === selectedUserId) || c.master.id === selectedUserId
+  )
+
+  useEffect(() => {
+    const uc = campaigns.filter(
+      (c) => c.players.some((p) => p.id === selectedUserId) || c.master.id === selectedUserId
+    )
+    setSelectedCampaignId(uc[0]?.id ?? "")
+    setVotes({})
+  }, [selectedUserId, campaigns])
+
+  const fetchVotes = useCallback(async () => {
+    if (!selectedUserId || !selectedCampaignId) return
+    const res = await fetch(
+      `/api/admin/availability?userId=${selectedUserId}&campaignId=${selectedCampaignId}&weekStart=${weekStartToString(selectedWeek)}`
+    )
+    const data = await res.json()
+    setVotes(data)
+  }, [selectedUserId, selectedCampaignId, selectedWeek])
+
+  useEffect(() => { fetchVotes() }, [fetchVotes])
+
+  const handleVote = async (dayOfWeek: number, vote: VoteValue) => {
+    const previous = votes[dayOfWeek]
+    const next = previous === vote ? null : vote
+    setVotes((prev) => ({ ...prev, [dayOfWeek]: next }))
+    setSaving(dayOfWeek)
+    await fetch("/api/admin/availability", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: selectedUserId,
+        campaignId: selectedCampaignId,
+        weekStart: weekStartToString(selectedWeek),
+        dayOfWeek,
+        vote: next,
+      }),
+    })
+    setSaving(null)
+  }
+
+  const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedWeek, i))
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-xs text-gray-400 mb-1">Utente</label>
+        <select
+          value={selectedUserId}
+          onChange={(e) => setSelectedUserId(e.target.value)}
+          className="w-full bg-gray-700 border border-gray-600 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+        >
+          <option value="">Seleziona utente…</option>
+          {users.map((u) => (
+            <option key={u.id} value={u.id}>{u.username}</option>
+          ))}
+        </select>
+      </div>
+
+      {selectedUserId && userCampaigns.length === 0 && (
+        <p className="text-gray-400 text-sm">Utente non iscritto a nessuna campagna.</p>
+      )}
+
+      {selectedUserId && userCampaigns.length > 0 && (
+        <>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Campagna</label>
+            <select
+              value={selectedCampaignId}
+              onChange={(e) => setSelectedCampaignId(e.target.value)}
+              className="w-full bg-gray-700 border border-gray-600 rounded-xl px-4 py-2.5 text-white focus:outline-none"
+            >
+              {userCampaigns.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <WeekSelector weeks={weeks} selected={selectedWeek} onChange={setSelectedWeek} />
+
+          {selectedCampaignId && (
+            <div className="space-y-2">
+              {weekDates.map((date, i) => (
+                <DayRow
+                  key={i}
+                  dayName={DAYS_FULL[i]}
+                  dateLabel={formatDayLabel(date)}
+                  vote={votes[i] ?? null}
+                  saving={saving === i}
+                  onChange={(v) => handleVote(i, v)}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function DayRow({
+  dayName,
+  dateLabel,
+  vote,
+  saving,
+  onChange,
+}: {
+  dayName: string
+  dateLabel: string
+  vote: VoteValue
+  saving: boolean
+  onChange: (v: VoteValue) => void
+}) {
+  return (
+    <div className="bg-gray-800 rounded-xl p-3 flex items-center justify-between gap-2">
+      <div className="min-w-0">
+        <div className="font-medium text-sm">{dayName}</div>
+        <div className="text-xs text-gray-400">{dateLabel}</div>
+      </div>
+      <div className="flex gap-1 items-center">
+        {saving && <span className="text-xs text-gray-500 mr-1">...</span>}
+        <VoteButton label="✓" value="AVAILABLE" active={vote === "AVAILABLE"} color="bg-green-600" onClick={onChange} />
+        <VoteButton label="★" value="PREFERRED" active={vote === "PREFERRED"} color="bg-yellow-500" onClick={onChange} />
+        <VoteButton label="✗" value="UNAVAILABLE" active={vote === "UNAVAILABLE"} color="bg-red-600" onClick={onChange} />
+      </div>
+    </div>
+  )
+}
+
+function VoteButton({
+  label,
+  value,
+  active,
+  color,
+  onClick,
+}: {
+  label: string
+  value: VoteValue
+  active: boolean
+  color: string
+  onClick: (v: VoteValue) => void
+}) {
+  return (
+    <button
+      onClick={() => onClick(value)}
+      className={`w-10 h-10 rounded-full text-base font-bold transition-colors flex items-center justify-center ${
+        active ? `${color} text-white` : "bg-gray-700 text-gray-400 hover:bg-gray-600"
+      }`}
+    >
+      {label}
+    </button>
   )
 }
 
