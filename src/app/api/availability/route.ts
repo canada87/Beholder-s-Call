@@ -72,13 +72,21 @@ export async function GET(req: Request) {
     .filter((v) => v.userId === session.user.id)
     .forEach((v) => { myVotes[v.dayOfWeek] = v.vote })
 
+  // Build userId → campaignIds map from groupMemberships
+  const userCampaignIds = new Map<string, string[]>()
+  for (const m of groupMemberships) {
+    const list = userCampaignIds.get(m.user.id) ?? []
+    list.push(m.campaignId)
+    userCampaignIds.set(m.user.id, list)
+  }
+
   const playersVotes = players.map((p) => {
     const votes: Record<number, string | null> = {}
     for (let d = 0; d < 7; d++) votes[d] = null
     allVotes
       .filter((v) => v.userId === p.id)
       .forEach((v) => { votes[v.dayOfWeek] = v.vote })
-    return { id: p.id, username: p.username, votes }
+    return { id: p.id, username: p.username, votes, campaignIds: userCampaignIds.get(p.id) ?? [] }
   })
 
   const days = Array.from({ length: 7 }, (_, i) => ({

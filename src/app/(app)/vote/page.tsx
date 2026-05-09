@@ -10,6 +10,7 @@ interface PlayerVotes {
   id: string
   username: string
   votes: Record<number, VoteValue>
+  campaignIds: string[]
 }
 
 interface CampaignHighlight {
@@ -136,12 +137,20 @@ export default function VotePage() {
                           <td className="px-3 py-2 text-gray-300 whitespace-nowrap">{p.username}</td>
                           {Array.from({ length: 7 }, (_, i) => {
                             const hl = campaignHighlights.find((h) => h.bestDay === i)
+                            const inCampaign = hl ? p.campaignIds.includes(hl.campaignId) : false
                             return (
                               <td
                                 key={i}
-                                className="px-2 py-2 text-center"
+                                className="px-2 py-1.5 text-center"
                                 style={hl ? { backgroundColor: hl.campaignColor + "18" } : {}}
                               >
+                                {inCampaign && (
+                                  <div
+                                    className="w-2 h-2 rounded-full mx-auto mb-0.5"
+                                    style={{ backgroundColor: hl!.campaignColor }}
+                                  />
+                                )}
+                                {!inCampaign && hl && <div className="h-2 mb-0.5" />}
                                 <VoteIcon vote={p.votes[i]} />
                               </td>
                             )
