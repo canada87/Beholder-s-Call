@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react"
 import WeekSelector from "@/components/WeekSelector"
 import { getNext4Weeks, weekStartToString, DAYS_FULL, DAYS_SHORT, formatDayLabel } from "@/lib/utils"
-import { addDays, parseISO } from "date-fns"
+import { addDays, parseISO, format } from "date-fns"
 
 type VoteValue = "AVAILABLE" | "PREFERRED" | "UNAVAILABLE" | null
 
@@ -64,7 +64,7 @@ export default function MasterPage() {
       body: JSON.stringify({
         campaignId: selectedCampaign,
         weekStart: weekStartToString(selectedWeek),
-        date: date.toISOString().split("T")[0],
+        date: format(date, "yyyy-MM-dd"),
         isCancelled: false,
       }),
     })

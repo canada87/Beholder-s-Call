@@ -62,9 +62,10 @@ export async function GET(req: Request) {
   })
 
   // All votes for the week across all users (used for highlight computation — includes masters who aren't CampaignPlayers)
-  const allVotesThisWeek = await prisma.availability.findMany({
-    where: { weekStart },
-  })
+  const [allVotesThisWeek, sessionOverrides] = await Promise.all([
+    prisma.availability.findMany({ where: { weekStart } }),
+    prisma.session.findMany({ where: { weekStart } }),
+  ])
 
   const myVotes: Record<number, string | null> = {}
   for (let d = 0; d < 7; d++) myVotes[d] = null
@@ -114,8 +115,23 @@ export async function GET(req: Request) {
     return ((bS[0] ?? 0) - (bS[1] ?? 0)) - ((aS[0] ?? 0) - (aS[1] ?? 0))
   })
 
-  const assignedDays = new Set<number>()
+  // Build override map: campaignId → dayOfWeek (from actual session choice)
+  const overridesBycamp = new Map<string, number>()
+  for (const o of sessionOverrides) {
+    if (!o.isCancelled) {
+      const utcDay = o.date.getUTCDay()
+      overridesBycamp.set(o.campaignId, utcDay === 0 ? 6 : utcDay - 1)
+    }
+  }
+
+  // Pre-assign days locked by session overrides so computed campaigns avoid them
+  const assignedDays = new Set<number>(overridesBycamp.values())
+
   const campaignHighlights = campaignDayScores.map((c) => {
+    const overrideDay = overridesBycamp.get(c.id)
+    if (overrideDay !== undefined) {
+      return { campaignId: c.id, campaignName: c.name, campaignColor: c.color, bestDay: overrideDay }
+    }
     const ranked = c.dayScores
       .map((score, day) => ({ day, score }))
       .sort((a, b) =>
