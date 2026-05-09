@@ -39,15 +39,22 @@ export async function GET(req: Request) {
   const defaultDate = addDays(weekStart, campaign.defaultDayOfWeek)
   const sessionDate = sessionOverride?.date ?? defaultDate
 
-  // All players of this campaign
+  // Players of this campaign
   const players = await prisma.campaignPlayer.findMany({
     where: { campaignId },
     include: { user: { select: { id: true, username: true } } },
   })
+  const playerIds = players.map((p) => p.user.id)
 
-  // All votes for this campaign this week
+  // Global votes for these players this week (no campaignId filter)
   const allVotes = await prisma.availability.findMany({
-    where: { campaignId, weekStart },
+    where: { userId: { in: playerIds }, weekStart },
+  })
+
+  // Campaign memberships for all players (for color coding in master view)
+  const allMemberships = await prisma.campaignPlayer.findMany({
+    where: { userId: { in: playerIds } },
+    select: { userId: true, campaignId: true },
   })
 
   const playersData = players.map((p) => {
@@ -56,7 +63,10 @@ export async function GET(req: Request) {
     allVotes
       .filter((v) => v.userId === p.user.id)
       .forEach((v) => { votes[v.dayOfWeek] = v.vote })
-    return { id: p.user.id, username: p.user.username, votes }
+    const campaignIds = allMemberships
+      .filter((m) => m.userId === p.user.id)
+      .map((m) => m.campaignId)
+    return { id: p.user.id, username: p.user.username, votes, campaignIds }
   })
 
   // All sessions for ALL campaigns this week (to show conflicts)

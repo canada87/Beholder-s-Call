@@ -2,15 +2,9 @@
 import { useState, useEffect, useCallback } from "react"
 import WeekSelector from "@/components/WeekSelector"
 import { getNext4Weeks, weekStartToString, DAYS_FULL, DAYS_SHORT, formatDayLabel } from "@/lib/utils"
-import { addDays, parseISO } from "date-fns"
+import { addDays } from "date-fns"
 
 type VoteValue = "AVAILABLE" | "PREFERRED" | "UNAVAILABLE" | null
-
-interface Campaign {
-  id: string
-  name: string
-  color: string
-}
 
 interface PlayerVotes {
   id: string
@@ -19,36 +13,25 @@ interface PlayerVotes {
 }
 
 export default function VotePage() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([])
-  const [selectedCampaign, setSelectedCampaign] = useState("")
   const [weeks] = useState(getNext4Weeks)
   const [selectedWeek, setSelectedWeek] = useState(weeks[0])
   const [myVotes, setMyVotes] = useState<Record<number, VoteValue>>({})
   const [playersVotes, setPlayersVotes] = useState<PlayerVotes[]>([])
   const [saving, setSaving] = useState<number | null>(null)
-
-  useEffect(() => {
-    fetch("/api/campaigns")
-      .then((r) => r.json())
-      .then((data) => {
-        setCampaigns(data)
-        if (data.length > 0) setSelectedCampaign(data[0].id)
-      })
-  }, [])
+  const [noGroup, setNoGroup] = useState(false)
 
   const fetchVotes = useCallback(async () => {
-    if (!selectedCampaign) return
-    const res = await fetch(
-      `/api/availability?campaignId=${selectedCampaign}&weekStart=${weekStartToString(selectedWeek)}`
-    )
+    const res = await fetch(`/api/availability?weekStart=${weekStartToString(selectedWeek)}`)
     const data = await res.json()
+    if (!data.days) return
     const votes: Record<number, VoteValue> = {}
     data.days.forEach((d: { dayOfWeek: number; vote: VoteValue }) => {
       votes[d.dayOfWeek] = d.vote
     })
     setMyVotes(votes)
     setPlayersVotes(data.playersVotes ?? [])
-  }, [selectedCampaign, selectedWeek])
+    setNoGroup((data.playersVotes ?? []).length === 0)
+  }, [selectedWeek])
 
   useEffect(() => { fetchVotes() }, [fetchVotes])
 
@@ -60,12 +43,7 @@ export default function VotePage() {
     await fetch("/api/availability", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        campaignId: selectedCampaign,
-        weekStart: weekStartToString(selectedWeek),
-        dayOfWeek,
-        vote: next,
-      }),
+      body: JSON.stringify({ weekStart: weekStartToString(selectedWeek), dayOfWeek, vote: next }),
     })
     setSaving(null)
   }
@@ -76,25 +54,10 @@ export default function VotePage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Disponibilità</h1>
 
-      {campaigns.length === 0 ? (
+      {noGroup ? (
         <p className="text-gray-400">Non sei iscritto a nessuna campagna.</p>
       ) : (
         <>
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1">Campagna</label>
-            <select
-              value={selectedCampaign}
-              onChange={(e) => setSelectedCampaign(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500"
-            >
-              {campaigns.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <WeekSelector weeks={weeks} selected={selectedWeek} onChange={setSelectedWeek} />
 
           <div>

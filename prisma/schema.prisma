@@ -35,9 +35,8 @@ model Campaign {
   color            String   @default("#8b5cf6")
   createdAt        DateTime @default(now())
 
-  players        CampaignPlayer[]
-  sessions       Session[]
-  availabilities Availability[]
+  players  CampaignPlayer[]
+  sessions Session[]
 }
 
 model CampaignPlayer {
@@ -62,16 +61,14 @@ model Session {
 }
 
 model Availability {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  campaignId String
-  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  weekStart  DateTime // Monday 00:00:00 UTC
-  dayOfWeek  Int      // 0=Mon … 6=Sun
-  vote       Vote
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart DateTime // Monday 00:00:00 UTC
+  dayOfWeek Int      // 0=Mon … 6=Sun
+  vote      Vote
 
-  @@unique([userId, campaignId, weekStart, dayOfWeek])
+  @@unique([userId, weekStart, dayOfWeek])
 }
 
 enum Vote {

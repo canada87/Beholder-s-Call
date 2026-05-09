@@ -9,7 +9,7 @@ type VoteValue = "AVAILABLE" | "PREFERRED" | "UNAVAILABLE" | null
 interface MasterData {
   campaign: { id: string; name: string; color: string; defaultDayOfWeek: number; masterName: string }
   currentSession: { date: string; dayOfWeek: number; isCancelled: boolean; isOverridden: boolean }
-  players: { id: string; username: string; votes: Record<number, VoteValue> }[]
+  players: { id: string; username: string; votes: Record<number, VoteValue>; campaignIds: string[] }[]
   allSessions: { campaignId: string; campaignName: string; campaignColor: string; dayOfWeek: number }[]
 }
 
@@ -236,33 +236,66 @@ export default function MasterPage() {
                   <div className="space-y-1">
                     {available.length > 0 && (
                       <div className="flex flex-wrap gap-1">
-                        {available.map((p) => (
-                          <span key={p.id} className={`text-xs px-2 py-0.5 rounded-full ${
-                            p.votes[i] === "PREFERRED"
-                              ? "bg-yellow-900 text-yellow-300"
-                              : "bg-green-900 text-green-300"
-                          }`}>
-                            {p.votes[i] === "PREFERRED" ? "★ " : "✓ "}{p.username}
-                          </span>
-                        ))}
+                        {available.map((p) => {
+                          const exclusive = p.campaignIds.length === 1
+                          return (
+                            <span
+                              key={p.id}
+                              title={exclusive ? "Solo questa campagna" : undefined}
+                              className={`text-xs px-2 py-0.5 rounded-full ${
+                                p.votes[i] === "PREFERRED"
+                                  ? exclusive
+                                    ? "bg-yellow-900/60 text-yellow-400 border border-yellow-700 border-dashed"
+                                    : "bg-yellow-900 text-yellow-300"
+                                  : exclusive
+                                    ? "bg-green-900/60 text-green-400 border border-green-700 border-dashed"
+                                    : "bg-green-900 text-green-300"
+                              }`}
+                            >
+                              {p.votes[i] === "PREFERRED" ? "★ " : "✓ "}{p.username}
+                            </span>
+                          )
+                        })}
                       </div>
                     )}
                     {unavailable.length > 0 && (
                       <div className="flex flex-wrap gap-1">
-                        {unavailable.map((p) => (
-                          <span key={p.id} className="text-xs px-2 py-0.5 rounded-full bg-red-900 text-red-300">
-                            ✗ {p.username}
-                          </span>
-                        ))}
+                        {unavailable.map((p) => {
+                          const exclusive = p.campaignIds.length === 1
+                          return (
+                            <span
+                              key={p.id}
+                              title={exclusive ? "Solo questa campagna" : undefined}
+                              className={`text-xs px-2 py-0.5 rounded-full ${
+                                exclusive
+                                  ? "bg-red-900/60 text-red-400 border border-red-700 border-dashed"
+                                  : "bg-red-900 text-red-300"
+                              }`}
+                            >
+                              ✗ {p.username}
+                            </span>
+                          )
+                        })}
                       </div>
                     )}
                     {noVote.length > 0 && (
                       <div className="flex flex-wrap gap-1">
-                        {noVote.map((p) => (
-                          <span key={p.id} className="text-xs px-2 py-0.5 rounded-full bg-gray-700 text-gray-400">
-                            – {p.username}
-                          </span>
-                        ))}
+                        {noVote.map((p) => {
+                          const exclusive = p.campaignIds.length === 1
+                          return (
+                            <span
+                              key={p.id}
+                              title={exclusive ? "Solo questa campagna" : undefined}
+                              className={`text-xs px-2 py-0.5 rounded-full ${
+                                exclusive
+                                  ? "bg-gray-700/60 text-gray-500 border border-gray-600 border-dashed"
+                                  : "bg-gray-700 text-gray-400"
+                              }`}
+                            >
+                              – {p.username}
+                            </span>
+                          )
+                        })}
                       </div>
                     )}
                   </div>
