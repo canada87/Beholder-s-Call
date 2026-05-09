@@ -56,9 +56,14 @@ export async function GET(req: Request) {
   }
   const players = Array.from(playersMap.values())
 
-  // Global votes for all group members this week
+  // Global votes for all group members this week (used for table display)
   const allVotes = await prisma.availability.findMany({
     where: { userId: { in: players.map((p) => p.id) }, weekStart },
+  })
+
+  // All votes for the week across all users (used for highlight computation — includes masters who aren't CampaignPlayers)
+  const allVotesThisWeek = await prisma.availability.findMany({
+    where: { weekStart },
   })
 
   const myVotes: Record<number, string | null> = {}
@@ -87,7 +92,7 @@ export async function GET(req: Request) {
   const campaignDayScores = allCampaigns.map((c) => {
     const memberIds = new Set(c.players.map((p) => p.userId))
     const dayScores = Array.from({ length: 7 }, (_, day) =>
-      allVotes
+      allVotesThisWeek
         .filter((v) => memberIds.has(v.userId) && v.dayOfWeek === day)
         .reduce((sum, v) => sum + (VOTE_SCORE[v.vote] ?? 0), 0)
     )
