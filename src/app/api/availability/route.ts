@@ -28,7 +28,7 @@ export async function GET(req: Request) {
       select: { id: true },
     }),
     prisma.campaign.findMany({
-      select: { id: true, name: true, color: true, players: { select: { userId: true } } },
+      select: { id: true, name: true, color: true, defaultDayOfWeek: true, players: { select: { userId: true } } },
     }),
   ])
   const myCampaignIds = [
@@ -91,7 +91,7 @@ export async function GET(req: Request) {
         .filter((v) => memberIds.has(v.userId) && v.dayOfWeek === day)
         .reduce((sum, v) => sum + (VOTE_SCORE[v.vote] ?? 0), 0)
     )
-    return { id: c.id, name: c.name, color: c.color, dayScores }
+    return { id: c.id, name: c.name, color: c.color, defaultDayOfWeek: c.defaultDayOfWeek, dayScores }
   })
 
   // Campaign with the clearest preference (biggest gap between 1st and 2nd best) goes first
@@ -105,7 +105,12 @@ export async function GET(req: Request) {
   const campaignHighlights = campaignDayScores.map((c) => {
     const ranked = c.dayScores
       .map((score, day) => ({ day, score }))
-      .sort((a, b) => b.score - a.score || a.day - b.day)
+      .sort((a, b) =>
+        b.score - a.score ||
+        // tiebreaker: prefer defaultDayOfWeek when scores are equal (e.g. no votes yet)
+        (b.day === c.defaultDayOfWeek ? 1 : 0) - (a.day === c.defaultDayOfWeek ? 1 : 0) ||
+        a.day - b.day
+      )
     const best = ranked.find(({ day }) => !assignedDays.has(day))
     if (best) assignedDays.add(best.day)
     return { campaignId: c.id, campaignName: c.name, campaignColor: c.color, bestDay: best?.day ?? null }
