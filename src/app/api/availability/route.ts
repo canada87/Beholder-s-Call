@@ -17,8 +17,8 @@ export async function GET(req: Request) {
 
   const weekStart = parseISO(weekStartStr)
 
-  // All campaigns the current user belongs to (as player or master)
-  const [playerMemberships, masteredCampaigns] = await Promise.all([
+  // All campaigns the current user belongs to (as player or master) + all campaigns for highlights
+  const [playerMemberships, masteredCampaigns, allCampaigns] = await Promise.all([
     prisma.campaignPlayer.findMany({
       where: { userId: session.user.id },
       select: { campaignId: true },
@@ -26,6 +26,9 @@ export async function GET(req: Request) {
     prisma.campaign.findMany({
       where: { masterId: session.user.id },
       select: { id: true },
+    }),
+    prisma.campaign.findMany({
+      select: { id: true, name: true, color: true, players: { select: { userId: true } } },
     }),
   ])
   const myCampaignIds = [
@@ -39,7 +42,7 @@ export async function GET(req: Request) {
       date: addDays(weekStart, i).toISOString().split("T")[0],
       vote: null,
     }))
-    return NextResponse.json({ days, playersVotes: [] })
+    return NextResponse.json({ days, playersVotes: [], campaignHighlights: [] })
   }
 
   // All players in those campaigns (the "group"), deduplicated
@@ -79,7 +82,36 @@ export async function GET(req: Request) {
     vote: myVotes[i],
   }))
 
-  return NextResponse.json({ days, playersVotes })
+  // Best non-overlapping day per campaign based on player vote scores
+  const VOTE_SCORE: Record<string, number> = { PREFERRED: 2, AVAILABLE: 1, UNAVAILABLE: 0 }
+  const campaignDayScores = allCampaigns.map((c) => {
+    const memberIds = new Set(c.players.map((p) => p.userId))
+    const dayScores = Array.from({ length: 7 }, (_, day) =>
+      allVotes
+        .filter((v) => memberIds.has(v.userId) && v.dayOfWeek === day)
+        .reduce((sum, v) => sum + (VOTE_SCORE[v.vote] ?? 0), 0)
+    )
+    return { id: c.id, name: c.name, color: c.color, dayScores }
+  })
+
+  // Campaign with the clearest preference (biggest gap between 1st and 2nd best) goes first
+  campaignDayScores.sort((a, b) => {
+    const aS = [...a.dayScores].sort((x, y) => y - x)
+    const bS = [...b.dayScores].sort((x, y) => y - x)
+    return ((bS[0] ?? 0) - (bS[1] ?? 0)) - ((aS[0] ?? 0) - (aS[1] ?? 0))
+  })
+
+  const assignedDays = new Set<number>()
+  const campaignHighlights = campaignDayScores.map((c) => {
+    const ranked = c.dayScores
+      .map((score, day) => ({ day, score }))
+      .sort((a, b) => b.score - a.score || a.day - b.day)
+    const best = ranked.find(({ day }) => !assignedDays.has(day))
+    if (best) assignedDays.add(best.day)
+    return { campaignId: c.id, campaignName: c.name, campaignColor: c.color, bestDay: best?.day ?? null }
+  })
+
+  return NextResponse.json({ days, playersVotes, campaignHighlights })
 }
 
 // POST /api/availability — upsert a single vote (global, no campaign)

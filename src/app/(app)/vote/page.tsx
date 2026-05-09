@@ -12,11 +12,19 @@ interface PlayerVotes {
   votes: Record<number, VoteValue>
 }
 
+interface CampaignHighlight {
+  campaignId: string
+  campaignName: string
+  campaignColor: string
+  bestDay: number | null
+}
+
 export default function VotePage() {
   const [weeks] = useState(getNext4Weeks)
   const [selectedWeek, setSelectedWeek] = useState(weeks[0])
   const [myVotes, setMyVotes] = useState<Record<number, VoteValue>>({})
   const [playersVotes, setPlayersVotes] = useState<PlayerVotes[]>([])
+  const [campaignHighlights, setCampaignHighlights] = useState<CampaignHighlight[]>([])
   const [saving, setSaving] = useState<number | null>(null)
   const [noGroup, setNoGroup] = useState(false)
 
@@ -30,6 +38,7 @@ export default function VotePage() {
     })
     setMyVotes(votes)
     setPlayersVotes(data.playersVotes ?? [])
+    setCampaignHighlights(data.campaignHighlights ?? [])
     setNoGroup((data.playersVotes ?? []).length === 0)
   }, [selectedWeek])
 
@@ -80,29 +89,63 @@ export default function VotePage() {
 
           {playersVotes.length > 0 && (
             <div>
-              <h2 className="text-sm font-medium text-gray-400 mb-2 uppercase tracking-wide">
-                Disponibilità del gruppo
-              </h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide">
+                  Disponibilità del gruppo
+                </h2>
+                {campaignHighlights.length > 0 && (
+                  <div className="flex gap-3">
+                    {campaignHighlights.filter((h) => h.bestDay !== null).map((h) => (
+                      <span key={h.campaignId} className="flex items-center gap-1 text-xs text-gray-400">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: h.campaignColor }} />
+                        {h.campaignName}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="bg-gray-800 rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-700">
                         <th className="text-left px-3 py-2 text-gray-400 font-medium">Giocatore</th>
-                        {DAYS_SHORT.map((d) => (
-                          <th key={d} className="px-2 py-2 text-gray-400 font-medium text-center">{d}</th>
-                        ))}
+                        {DAYS_SHORT.map((d, i) => {
+                          const hl = campaignHighlights.find((h) => h.bestDay === i)
+                          return (
+                            <th
+                              key={d}
+                              className="px-2 pt-2 pb-1.5 font-medium text-center"
+                              style={hl ? { borderBottom: `2px solid ${hl.campaignColor}` } : {}}
+                            >
+                              {hl && (
+                                <div
+                                  className="w-1.5 h-1.5 rounded-full mx-auto mb-1"
+                                  style={{ backgroundColor: hl.campaignColor }}
+                                />
+                              )}
+                              <span className={hl ? "text-white" : "text-gray-400"}>{d}</span>
+                            </th>
+                          )
+                        })}
                       </tr>
                     </thead>
                     <tbody>
                       {playersVotes.map((p) => (
                         <tr key={p.id} className="border-b border-gray-700 last:border-0">
                           <td className="px-3 py-2 text-gray-300 whitespace-nowrap">{p.username}</td>
-                          {Array.from({ length: 7 }, (_, i) => (
-                            <td key={i} className="px-2 py-2 text-center">
-                              <VoteIcon vote={p.votes[i]} />
-                            </td>
-                          ))}
+                          {Array.from({ length: 7 }, (_, i) => {
+                            const hl = campaignHighlights.find((h) => h.bestDay === i)
+                            return (
+                              <td
+                                key={i}
+                                className="px-2 py-2 text-center"
+                                style={hl ? { backgroundColor: hl.campaignColor + "18" } : {}}
+                              >
+                                <VoteIcon vote={p.votes[i]} />
+                              </td>
+                            )
+                          })}
                         </tr>
                       ))}
                     </tbody>
