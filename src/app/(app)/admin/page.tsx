@@ -66,7 +66,7 @@ export default function AdminPage() {
         <CampaignsTab campaigns={campaigns} users={users} onRefresh={fetchCampaigns} />
       )}
       {tab === "availability" && (
-        <AvailabilityTab users={users} campaigns={campaigns} />
+        <AvailabilityTab users={users} />
       )}
     </div>
   )
@@ -447,34 +447,23 @@ function CampaignForm({
 
 // ---- Availability Tab ----
 
-function AvailabilityTab({ users, campaigns }: { users: User[]; campaigns: Campaign[] }) {
+function AvailabilityTab({ users }: { users: User[] }) {
   const [selectedUserId, setSelectedUserId] = useState("")
-  const [selectedCampaignId, setSelectedCampaignId] = useState("")
   const [weeks] = useState(getNext4Weeks)
   const [selectedWeek, setSelectedWeek] = useState(weeks[0])
   const [votes, setVotes] = useState<Record<number, VoteValue>>({})
   const [saving, setSaving] = useState<number | null>(null)
 
-  const userCampaigns = campaigns.filter(
-    (c) => c.players.some((p) => p.id === selectedUserId) || c.master.id === selectedUserId
-  )
-
-  useEffect(() => {
-    const uc = campaigns.filter(
-      (c) => c.players.some((p) => p.id === selectedUserId) || c.master.id === selectedUserId
-    )
-    setSelectedCampaignId(uc[0]?.id ?? "")
-    setVotes({})
-  }, [selectedUserId, campaigns])
+  useEffect(() => { setVotes({}) }, [selectedUserId])
 
   const fetchVotes = useCallback(async () => {
-    if (!selectedUserId || !selectedCampaignId) return
+    if (!selectedUserId) return
     const res = await fetch(
-      `/api/admin/availability?userId=${selectedUserId}&campaignId=${selectedCampaignId}&weekStart=${weekStartToString(selectedWeek)}`
+      `/api/admin/availability?userId=${selectedUserId}&weekStart=${weekStartToString(selectedWeek)}`
     )
     const data = await res.json()
     setVotes(data)
-  }, [selectedUserId, selectedCampaignId, selectedWeek])
+  }, [selectedUserId, selectedWeek])
 
   useEffect(() => { fetchVotes() }, [fetchVotes])
 
@@ -488,7 +477,6 @@ function AvailabilityTab({ users, campaigns }: { users: User[]; campaigns: Campa
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId: selectedUserId,
-        campaignId: selectedCampaignId,
         weekStart: weekStartToString(selectedWeek),
         dayOfWeek,
         vote: next,
@@ -515,41 +503,21 @@ function AvailabilityTab({ users, campaigns }: { users: User[]; campaigns: Campa
         </select>
       </div>
 
-      {selectedUserId && userCampaigns.length === 0 && (
-        <p className="text-gray-400 text-sm">Utente non iscritto a nessuna campagna.</p>
-      )}
-
-      {selectedUserId && userCampaigns.length > 0 && (
+      {selectedUserId && (
         <>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Campagna</label>
-            <select
-              value={selectedCampaignId}
-              onChange={(e) => setSelectedCampaignId(e.target.value)}
-              className="w-full bg-gray-700 border border-gray-600 rounded-xl px-4 py-2.5 text-white focus:outline-none"
-            >
-              {userCampaigns.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
           <WeekSelector weeks={weeks} selected={selectedWeek} onChange={setSelectedWeek} />
-
-          {selectedCampaignId && (
-            <div className="space-y-2">
-              {weekDates.map((date, i) => (
-                <DayRow
-                  key={i}
-                  dayName={DAYS_FULL[i]}
-                  dateLabel={formatDayLabel(date)}
-                  vote={votes[i] ?? null}
-                  saving={saving === i}
-                  onChange={(v) => handleVote(i, v)}
-                />
-              ))}
-            </div>
-          )}
+          <div className="space-y-2">
+            {weekDates.map((date, i) => (
+              <DayRow
+                key={i}
+                dayName={DAYS_FULL[i]}
+                dateLabel={formatDayLabel(date)}
+                vote={votes[i] ?? null}
+                saving={saving === i}
+                onChange={(v) => handleVote(i, v)}
+              />
+            ))}
+          </div>
         </>
       )}
     </div>
