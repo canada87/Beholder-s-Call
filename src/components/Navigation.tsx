@@ -8,7 +8,7 @@ const NAV = [
   { href: "/admin", label: "Admin", icon: "⚙️", adminOnly: true },
 ]
 
-export default function Navigation({ isMaster }: { isMaster: boolean }) {
+export default function Navigation() {
   const pathname = usePathname()
   const router = useRouter()
   const { data: session } = useSession()
@@ -21,7 +21,6 @@ export default function Navigation({ isMaster }: { isMaster: boolean }) {
 
   const visible = NAV.filter((item) => {
     if (item.adminOnly) return isAdmin
-    if (item.masterOnly) return isMaster || isAdmin
     return true
   })
 

@@ -8,11 +8,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const session = await getServerSession(authOptions)
   if (!session) redirect("/login")
 
-  const masterCount = await prisma.campaign.count({
-    where: { masterId: session.user.id },
-  })
-  const isMaster = masterCount > 0 || session.user.role === "ADMIN"
-
   return (
     <div className="min-h-screen pb-20">
       <header className="sticky top-0 z-40 bg-gray-900 border-b border-gray-700 px-4 py-3 flex items-center gap-2">
@@ -21,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <span className="ml-auto text-sm text-gray-400">{session.user.username}</span>
       </header>
       <main className="max-w-2xl mx-auto px-4 py-4">{children}</main>
-      <Navigation isMaster={isMaster} />
+      <Navigation />
     </div>
   )
 }
