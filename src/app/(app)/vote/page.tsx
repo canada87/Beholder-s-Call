@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useCallback } from "react"
 import WeekSelector from "@/components/WeekSelector"
-import { getNext4Weeks, weekStartToString, DAYS_FULL, DAYS_SHORT, formatDayLabel } from "@/lib/utils"
+import { getNext2Weeks, weekStartToString, DAYS_FULL, DAYS_SHORT, formatDayLabel } from "@/lib/utils"
 import { addDays } from "date-fns"
 
 type VoteValue = "AVAILABLE" | "PREFERRED" | "UNAVAILABLE" | null
@@ -21,7 +21,7 @@ interface CampaignHighlight {
 }
 
 export default function VotePage() {
-  const [weeks] = useState(getNext4Weeks)
+  const [weeks] = useState(getNext2Weeks)
   const [selectedWeek, setSelectedWeek] = useState(weeks[0])
   const [myVotes, setMyVotes] = useState<Record<number, VoteValue>>({})
   const [playersVotes, setPlayersVotes] = useState<PlayerVotes[]>([])
@@ -69,24 +69,6 @@ export default function VotePage() {
       ) : (
         <>
           <WeekSelector weeks={weeks} selected={selectedWeek} onChange={setSelectedWeek} />
-
-          <div>
-            <h2 className="text-sm font-medium text-gray-400 mb-2 uppercase tracking-wide">
-              La mia disponibilità
-            </h2>
-            <div className="space-y-2">
-              {weekDates.map((date, i) => (
-                <DayRow
-                  key={i}
-                  dayName={DAYS_FULL[i]}
-                  dateLabel={formatDayLabel(date)}
-                  vote={myVotes[i] ?? null}
-                  saving={saving === i}
-                  onChange={(v) => handleVote(i, v)}
-                />
-              ))}
-            </div>
-          </div>
 
           {playersVotes.length > 0 && (
             <div>
@@ -163,6 +145,24 @@ export default function VotePage() {
               </div>
             </div>
           )}
+
+          <div>
+            <h2 className="text-sm font-medium text-gray-400 mb-2 uppercase tracking-wide">
+              La mia disponibilità
+            </h2>
+            <div className="space-y-2">
+              {weekDates.map((date, i) => (
+                <DayRow
+                  key={i}
+                  dayName={DAYS_FULL[i]}
+                  dateLabel={formatDayLabel(date)}
+                  vote={myVotes[i] ?? null}
+                  saving={saving === i}
+                  onChange={(v) => handleVote(i, v)}
+                />
+              ))}
+            </div>
+          </div>
         </>
       )}
     </div>
