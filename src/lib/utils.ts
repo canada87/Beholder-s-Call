@@ -25,6 +25,11 @@ export function getNext4Weeks(from: Date = new Date()): Date[] {
   return Array.from({ length: 4 }, (_, i) => addDays(current, i * 7))
 }
 
+export function getNext2Weeks(from: Date = new Date()): Date[] {
+  const current = getWeekStart(from)
+  return Array.from({ length: 2 }, (_, i) => addDays(current, i * 7))
+}
+
 export function weekStartToString(date: Date): string {
   return format(date, "yyyy-MM-dd")
 }

@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useCallback } from "react"
 import WeekSelector from "@/components/WeekSelector"
-import { getNext4Weeks, weekStartToString, DAYS_SHORT, formatDayLabel } from "@/lib/utils"
+import { getNext2Weeks, weekStartToString, DAYS_SHORT, formatDayLabel } from "@/lib/utils"
 import { parseISO } from "date-fns"
 
 interface SessionInfo {
@@ -17,7 +17,7 @@ interface SessionInfo {
 }
 
 export default function CalendarPage() {
-  const [weeks] = useState(getNext4Weeks)
+  const [weeks] = useState(getNext2Weeks)
   const [selectedWeek, setSelectedWeek] = useState(weeks[0])
   const [sessions, setSessions] = useState<SessionInfo[]>([])
   const [loading, setLoading] = useState(false)

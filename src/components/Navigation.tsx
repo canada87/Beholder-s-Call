@@ -4,9 +4,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
 
 const NAV = [
-  { href: "/", label: "Calendario", icon: "📅" },
   { href: "/vote", label: "Vota", icon: "🎲" },
-  { href: "/master", label: "Master", icon: "⚔️", masterOnly: true },
   { href: "/admin", label: "Admin", icon: "⚙️", adminOnly: true },
 ]
 

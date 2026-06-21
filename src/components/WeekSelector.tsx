@@ -7,13 +7,16 @@ interface Props {
   onChange: (week: Date) => void
 }
 
+const WEEK_SUFFIXES = ["(corrente)", "(prossima)"]
+
 export default function WeekSelector({ weeks, selected, onChange }: Props) {
   const selectedStr = weekStartToString(selected)
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-      {weeks.map((week) => {
+      {weeks.map((week, i) => {
         const str = weekStartToString(week)
         const active = str === selectedStr
+        const suffix = weeks.length <= 2 && i < 2 ? ` ${WEEK_SUFFIXES[i]}` : ""
         return (
           <button
             key={str}
@@ -24,7 +27,7 @@ export default function WeekSelector({ weeks, selected, onChange }: Props) {
                 : "bg-gray-800 text-gray-300 hover:bg-gray-700"
             }`}
           >
-            {formatWeekLabel(week)}
+            {formatWeekLabel(week)}{suffix}
           </button>
         )
       })}

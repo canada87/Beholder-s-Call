@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useCallback } from "react"
 import WeekSelector from "@/components/WeekSelector"
-import { getNext4Weeks, weekStartToString, DAYS_FULL, DAYS_SHORT, formatDayLabel } from "@/lib/utils"
+import { getNext2Weeks, weekStartToString, DAYS_FULL, DAYS_SHORT, formatDayLabel } from "@/lib/utils"
 import { addDays, parseISO, format } from "date-fns"
 
 type VoteValue = "AVAILABLE" | "PREFERRED" | "UNAVAILABLE" | null
@@ -23,7 +23,7 @@ interface Campaign {
 export default function MasterPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState("")
-  const [weeks] = useState(getNext4Weeks)
+  const [weeks] = useState(getNext2Weeks)
   const [selectedWeek, setSelectedWeek] = useState(weeks[0])
   const [data, setData] = useState<MasterData | null>(null)
   const [loading, setLoading] = useState(false)
